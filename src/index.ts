@@ -383,8 +383,378 @@ export class GmailMCP extends McpAgent {
             }
         );
 
+        // List coursework tool
+        this.server.tool(
+            "list_coursework",
+            "List coursework for a specific Google Classroom course",
+            {
+                courseId: z.string().describe("The ID of the course to retrieve coursework from"),
+            },
+            async ({ courseId }) => {
+                try {
+                    const coursework = await this.makeRequest(`/classroom/coursework?courseId=${courseId}`);
+                    
+                    if (!coursework?.courseWork?.length) {
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: "No coursework found for this course.",
+                            },
+                        ],
+                    };
+                }
+
+                const courseworkList = coursework.courseWork.map((work: any) => {
+                    let details = `Title: ${work.title}\n`;
+                    details += `ID: ${work.id}\n`;
+                    if (work.description) details += `Description: ${work.description}\n`;
+                    if (work.dueDate) {
+                        const dueDate = work.dueDate;
+                        const dueTime = work.dueTime || { hours: 0, minutes: 0 };
+                        details += `Due: ${dueDate.year}-${dueDate.month}-${dueDate.day} ${dueTime.hours}:${dueTime.minutes}\n`;
+                    }
+                    if (work.maxPoints) details += `Max Points: ${work.maxPoints}\n`;
+                    details += `---\n`;
+                    return details;
+                }).join('\n');
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Found ${coursework.courseWork.length} coursework items:\n\n${courseworkList}`,
+                        },
+                    ],
+                };
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Error: ${(error as Error).message}`,
+                        },
+                    ],
+                };
+            }
+        );
+
+        // List announcements tool
+        this.server.tool(
+            "list_announcements",
+            "List announcements for a specific Google Classroom course",
+            {
+                courseId: z.string().describe("The ID of the course to retrieve announcements from"),
+            },
+            async ({ courseId }) => {
+                try {
+                    const announcements = await this.makeRequest(`/classroom/announcements?courseId=${courseId}`);
+                    
+                    if (!announcements?.announcements?.length) {
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: "No announcements found for this course.",
+                            },
+                        ],
+                    };
+                }
+
+                const announcementList = announcements.announcements.map((announcement: any) => {
+                    let details = `ID: ${announcement.id}\n`;
+                    details += `Posted: ${new Date(announcement.creationTime).toLocaleString()}\n`;
+                    details += `Text: ${announcement.text}\n`;
+                    if (announcement.materials?.length) {
+                        details += 'Materials:\n';
+                        announcement.materials.forEach((material: any) => {
+                            if (material.driveFile) details += `  - Drive File: ${material.driveFile.title}\n`;
+                            if (material.link) details += `  - Link: ${material.link.url} (${material.link.title})\n`;
+                            if (material.youtubeVideo) details += `  - YouTube: ${material.youtubeVideo.title}\n`;
+                        });
+                    }
+                    details += `---\n`;
+                    return details;
+                }).join('\n');
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Found ${announcements.announcements.length} announcements:\n\n${announcementList}`,
+                        },
+                    ],
+                };
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Error: ${(error as Error).message}`,
+                        },
+                    ],
+                };
+            }
+        );
+
+        // Get coursework details tool
+        this.server.tool(
+            "get_coursework",
+            "Get detailed content of a specific coursework/assignment",
+            {
+                courseId: z.string().describe("The ID of the course containing the assignment"),
+                courseworkId: z.string().describe("The ID of the specific coursework/assignment"),
+            },
+            async ({ courseId, courseworkId }) => {
+                try {
+                    const coursework = await this.makeRequest(`/classroom/coursework/details?courseId=${courseId}&courseworkId=${courseworkId}`);
+                    
+                    if (!coursework) {
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: "Assignment not found or could not be accessed.",
+                            },
+                        ],
+                    };
+                }
+
+                let details = `Title: ${coursework.title}\n`;
+                details += `ID: ${coursework.id}\n`;
+                details += `Course ID: ${coursework.courseId}\n`;
+                
+                if (coursework.description) details += `Description: ${coursework.description}\n`;
+                if (coursework.state) details += `State: ${coursework.state}\n`;
+                if (coursework.creationTime) details += `Created: ${new Date(coursework.creationTime).toLocaleString()}\n`;
+                if (coursework.updateTime) details += `Updated: ${new Date(coursework.updateTime).toLocaleString()}\n`;
+                
+                if (coursework.dueDate) {
+                    const dueDate = coursework.dueDate;
+                    const dueTime = coursework.dueTime || { hours: 0, minutes: 0 };
+                    details += `Due: ${dueDate.year}-${dueDate.month}-${dueDate.day} ${dueTime.hours}:${dueTime.minutes}\n`;
+                }
+                
+                if (coursework.maxPoints) details += `Max Points: ${coursework.maxPoints}\n`;
+                if (coursework.workType) details += `Work Type: ${coursework.workType}\n`;
+                
+                if (coursework.materials?.length) {
+                    details += 'Materials:\n';
+                    coursework.materials.forEach((material: any) => {
+                        if (material.driveFile) {
+                            // Handle different possible structures
+                            const fileData = material.driveFile.driveFile || material.driveFile;
+                            details += `  - Drive File: ${fileData.title || fileData.name}\n`;
+                            details += `    ID: ${fileData.id}\n`;
+                            details += `    Link: ${fileData.alternateLink || fileData.webViewLink}\n`;
+                        }
+                        if (material.link) {
+                            details += `  - Link: ${material.link.url}\n`;
+                            if (material.link.title) details += `    Title: ${material.link.title}\n`;
+                        }
+                        if (material.youtubeVideo) {
+                            details += `  - YouTube: ${material.youtubeVideo.title}\n`;
+                            details += `    Link: ${material.youtubeVideo.alternateLink}\n`;
+                        }
+                        if (material.form) {
+                            details += `  - Form: ${material.form.title}\n`;
+                            details += `    Link: ${material.form.formUrl}\n`;
+                        }
+                    });
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: details,
+                        },
+                    ],
+                };
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Error: ${(error as Error).message}`,
+                        },
+                    ],
+                };
+            }
+        );
+
+        // Get assignment materials tool
+        this.server.tool(
+            "get_assignment_materials",
+            "Get direct access to files attached to a classroom assignment",
+            {
+                courseId: z.string().describe("The ID of the course containing the assignment"),
+                courseworkId: z.string().describe("The ID of the specific coursework/assignment"),
+            },
+            async ({ courseId, courseworkId }) => {
+                try {
+                    const coursework = await this.makeRequest(`/classroom/coursework/details?courseId=${courseId}&courseworkId=${courseworkId}`);
+                    
+                    if (!coursework || !coursework.materials?.length) {
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: "No materials found for this assignment.",
+                            },
+                        ],
+                    };
+                }
+
+                // Transform materials into a more accessible format
+                const materials: any[] = [];
+                
+                coursework.materials.forEach((material: any) => {
+                    if (material.driveFile) {
+                        // Handle different possible structures
+                        const fileData = material.driveFile.driveFile || material.driveFile;
+                        materials.push({
+                            type: 'drive_file',
+                            id: fileData.id,
+                            title: fileData.title || fileData.name,
+                            url: fileData.alternateLink || fileData.webViewLink,
+                            mimeType: fileData.mimeType
+                        });
+                    }
+                    if (material.link) {
+                        materials.push({
+                            type: 'link',
+                            url: material.link.url,
+                            title: material.link.title || material.link.url
+                        });
+                    }
+                    if (material.youtubeVideo) {
+                        materials.push({
+                            type: 'youtube',
+                            id: material.youtubeVideo.id,
+                            title: material.youtubeVideo.title,
+                            url: material.youtubeVideo.alternateLink
+                        });
+                    }
+                    if (material.form) {
+                        materials.push({
+                            type: 'form',
+                            id: material.form.id,
+                            title: material.form.title,
+                            url: material.form.formUrl
+                        });
+                    }
+                });
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Assignment Materials for "${coursework.title}":\n\n${JSON.stringify(materials, null, 2)}`,
+                        },
+                    ],
+                };
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Error: ${(error as Error).message}`,
+                        },
+                    ],
+                };
+            }
+        );
+
+        // Download file tool
+        this.server.tool(
+            "download_file",
+            "Download a document, presentation, or other file",
+            {
+                fileId: z.string().describe("The Drive file ID to download"),
+                format: z.enum(['text', 'html', 'raw']).optional().describe("Optional format for conversion (e.g., \"text\", \"html\")"),
+            },
+            async ({ fileId, format = 'text' }) => {
+                try {
+                    const fileContent = await this.makeRequest(`/drive/files/download?fileId=${fileId}&format=${format}`);
+                    
+                    if (!fileContent || !fileContent.content) {
+                        // If content is missing, try to get at least file metadata
+                        const fileMetadata = await this.makeRequest(`/drive/files?fileId=${fileId}`);
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `File metadata retrieved:\n${JSON.stringify(fileMetadata, null, 2)}\n\nTo view this file, use the web link above or try the read_document tool with different fileType options.`,
+                            },
+                        ],
+                    };
+                }
+                
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: fileContent.content || 'File downloaded successfully, but content is empty or binary.',
+                        },
+                    ],
+                };
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Failed to download file: ${(error as Error).message}\n\nFor PowerPoint files, try using the read_document tool with fileType='slides' or visit the file's web link directly.`,
+                        },
+                    ],
+                };
+            }
+        );
+
+        // Read document tool
+        this.server.tool(
+            "read_document",
+            "Process and read content from a document file",
+            {
+                fileId: z.string().describe("The Drive file ID to read"),
+                fileType: z.enum(['doc', 'pdf', 'slides', 'sheet', 'auto']).optional().describe("The type of file (e.g., \"doc\", \"pdf\", \"slides\")"),
+            },
+            async ({ fileId, fileType = 'auto' }) => {
+                try {
+                    const documentContent = await this.makeRequest(`/drive/files/read?fileId=${fileId}&fileType=${fileType}`);
+                    
+                    if (!documentContent || !documentContent.content) {
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: 'Could not extract readable content from this document.',
+                            },
+                        ],
+                    };
+                }
+                
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Document Title: ${documentContent.title || 'Unknown'}\n\n${documentContent.content}`,
+                        },
+                    ],
+                };
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Failed to read document: ${(error as Error).message}`,
+                        },
+                    ],
+                };
+            }
+        );
+
         // Add more tools based on the provided Node.js implementation
-        // List coursework, list announcements, get coursework, get assignment materials, etc.
     }
 
     // Helper method to make authenticated requests
