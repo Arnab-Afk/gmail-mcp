@@ -419,7 +419,7 @@ export default {
             return GmailMCP.serveSSE("/sse").fetch(request, env, ctx);
         }
 
-        if (url.pathname === "/mcp") {
+        if (url.pathname === "/mcp" || url.pathname === "/") {
             return GmailMCP.serve("/mcp").fetch(request, env, ctx);
         }
 
