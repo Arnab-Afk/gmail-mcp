@@ -402,9 +402,13 @@ export class GmailMCP extends McpAgent {
     }
 }
 
+// Export GmailMCP as a Durable Object
+export { GmailMCP as MyMCP };
+
 // Interface for Cloudflare Worker environment
 interface Env {
     // Add any Worker environment bindings here
+    MyMCP: DurableObjectNamespace;
 }
 
 export default {
