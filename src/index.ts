@@ -16,6 +16,7 @@ export class GmailMCP extends McpAgent {
         // Authentication tool
         this.server.tool(
             "authenticate",
+            "Authenticate with Google to access Gmail, Calendar, and Classroom services",
             {
                 token: z.string().optional().describe("The authentication token received from the auth process"),
             },
@@ -47,6 +48,7 @@ export class GmailMCP extends McpAgent {
         // Search emails tool
         this.server.tool(
             "search_emails",
+            "Search for emails in Gmail using Gmail search syntax",
             {
                 query: z.string().describe("Gmail search query (e.g., \"from:example@gmail.com\", \"subject:important\", \"is:unread\")"),
             },
@@ -96,6 +98,7 @@ export class GmailMCP extends McpAgent {
         // Get email tool
         this.server.tool(
             "get_email",
+            "Retrieve a specific email by its message ID",
             {
                 messageId: z.string().describe("The Gmail message ID"),
             },
@@ -138,6 +141,7 @@ export class GmailMCP extends McpAgent {
         // List labels tool
         this.server.tool(
             "list_labels",
+            "List all Gmail labels in the user's account",
             {},
             async () => {
                 try {
@@ -182,6 +186,7 @@ export class GmailMCP extends McpAgent {
         // Get profile tool
         this.server.tool(
             "get_profile",
+            "Get information about the user's Gmail profile",
             {},
             async () => {
                 try {
@@ -211,6 +216,7 @@ export class GmailMCP extends McpAgent {
         // Calendar events tools
         this.server.tool(
             "list_events",
+            "List calendar events within a specified time range",
             {
                 timeMin: z.string().optional().describe("Start time for listing events (RFC3339 timestamp)"),
                 timeMax: z.string().optional().describe("End time for listing events (RFC3339 timestamp)"),
@@ -275,6 +281,7 @@ export class GmailMCP extends McpAgent {
         // Create calendar event
         this.server.tool(
             "create_event",
+            "Create a new event in Google Calendar",
             {
                 summary: z.string().describe("Title of the event"),
                 description: z.string().optional().describe("Description of the event"),
@@ -329,6 +336,7 @@ export class GmailMCP extends McpAgent {
         // Classroom tools
         this.server.tool(
             "list_courses",
+            "List all Google Classroom courses available to the user",
             {},
             async () => {
                 try {
