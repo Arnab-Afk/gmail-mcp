@@ -399,10 +399,10 @@ export class GmailMCP extends McpAgent {
                             content: [
                                 {
                                     type: "text",
-                                    text: "No coursework found for this course.",
-                            },
-                        ],
-                    };
+                                    text: "No coursework found for this course."
+                                }
+                            ]
+                        };
                 }
 
                 const courseworkList = coursework.courseWork.map((work: any) => {
@@ -455,10 +455,10 @@ export class GmailMCP extends McpAgent {
                             content: [
                                 {
                                     type: "text",
-                                    text: "No announcements found for this course.",
-                            },
-                        ],
-                    };
+                                    text: "No announcements found for this course."
+                                }
+                            ]
+                        };
                 }
 
                 const announcementList = announcements.announcements.map((announcement: any) => {
@@ -514,10 +514,10 @@ export class GmailMCP extends McpAgent {
                             content: [
                                 {
                                     type: "text",
-                                    text: "Assignment not found or could not be accessed.",
-                            },
-                        ],
-                    };
+                                    text: "Assignment not found or could not be accessed."
+                                }
+                            ]
+                        };
                 }
 
                 let details = `Title: ${coursework.title}\n`;
